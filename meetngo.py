@@ -1,9 +1,11 @@
 import csv
+import unicodedata
 
 
-def generate(filename, model, **kwargs):
-    with open(model) as i, open(filename, 'w') as o:
-        o.write(i.read().format(**kwargs))
+def compat(s):
+    """Return the string in lowercase and without accents."""
+    return ''.join(c for c in unicodedata.normalize('NFKD', s)
+                   if unicodedata.category(c) != 'Mn').casefold().strip()
 
 
 class Group(set):
@@ -18,7 +20,7 @@ class Group(set):
             if not exist and person.look_like(other):
                 print('\n{}\n{}'.format(other, person))
                 ans = input('Are these people the same person ? [Y/n] ')
-                if ans.casefold() == 'n'.casefold():
+                if compat(ans) == compat('n'):
                     print('Answer taken into account. Those are to different person.\n')
                 else:
                     print('Copy removed!\n')
@@ -40,19 +42,33 @@ class Mentor:
         self.surname = row[1].strip()
         self.name = row[2].strip()
         self.email = row[3].strip()
-        self.languages = set(row[7].split(';'))
+        self.lang = set(row[7].split(';'))
         self.country = row[8].strip()
         self.city = row[9].strip()
         self.university = row[10].strip()
+        self.present_the_23 = True if row[16] == 'Oui / Yes' else False
+        self.helping_the_23 = True if row[17] == 'Oui / Yes' else False
+
+    @property
+    def languages(self):
+        return ', '.join(self.lang)
 
     def look_like(self, other):
-        return (self.email.casefold() == other.email.casefold()
-                or (self.email.casefold() == other.email.casefold()
-                    and self.email.casefold() == other.email.casefold()))
+        return (compat(self.email) == compat(other.email)
+                or (compat(self.name) == compat(other.name)
+                    and compat(self.surname) == compat(other.surname)))
+
+    def generate_email(self):
+        with open('templates/mail_Filleul.txt') as template:
+            email = template.read()
+        #email = email.format(recipient=self, partner=self.partner)
+        email = email.format(recipient=self)
+        with open('generated_emails/{}.txt'.format(self.email), 'w') as f:
+            f.write(email)
 
     def __str__(self):
         return ' - {name} {surname}, {email}, have studied in {country}, \
-speak {languages}.'.format_map(self.__dict__)
+speak {lang}.'.format_map(self.__dict__)
 
 
 class Mentee:
@@ -61,19 +77,33 @@ class Mentee:
         self.surname = row[1].strip()
         self.name = row[2].strip()
         self.email = row[3].strip()
-        self.languages = set(row[7].split(';'))
+        self.lang = set(row[7].split(';'))
         self.country = row[8].strip()
         self.city = row[9].strip()
         self.university = row[10].strip()
+        self.present_the_23 = True if row[16] == 'Oui / Yes' else False
+        self.helping_the_23 = True if row[17] == 'Oui / Yes' else False
+
+    @property
+    def languages(self):
+        return ', '.join(self.lang)
 
     def look_like(self, other):
-        return (self.email.casefold() == other.email.casefold()
-                or (self.email.casefold() == other.email.casefold()
-                    and self.email.casefold() == other.email.casefold()))
+        return (compat(self.email) == compat(other.email)
+                or (compat(self.name) == compat(other.name)
+                    and compat(self.surname) == compat(other.surname)))
+
+    def generate_email(self):
+        with open('templates/mail_Filleul.txt') as template:
+            email = template.read()
+        #email = email.format(recipient=self, partner=self.partner)
+        email = email.format(recipient=self)
+        with open('generated_emails/{}.txt'.format(self.email), 'w') as f:
+            f.write(email)
 
     def __str__(self):
         return ' - {name} {surname}, {email}, want to go to {country}, \
-speak {languages}.'.format_map(self.__dict__)
+speak {lang}.'.format_map(self.__dict__)
 
 
 if __name__ == '__main__':
@@ -86,6 +116,8 @@ if __name__ == '__main__':
     print('Mentors:')
     for mentor in mentors:
         print(mentor)
+        mentor.generate_email()
     print('Mentees:')
     for mentee in mentees:
         print(mentee)
+        mentee.generate_email()

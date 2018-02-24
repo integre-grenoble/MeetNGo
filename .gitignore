@@ -1,3 +1,7 @@
+# avoid mistakes about personnal data
+generated_emails/
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
