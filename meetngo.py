@@ -1,5 +1,11 @@
 import csv
 
+
+def generate(filename, model, **kwargs):
+    with open(model) as i, open(filename, 'w') as o:
+        o.write(i.read().format(**kwargs))
+
+
 class Group(set):
 
     def __init__(self, person_class, *args):
