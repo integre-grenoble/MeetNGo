@@ -1,4 +1,6 @@
+#!/usr/bin/env python3
 import csv
+import sys
 import unicodedata
 
 
@@ -126,15 +128,34 @@ speak {lang}.'.format_map(self.__dict__)
 
 
 if __name__ == '__main__':
+
+    print(''' __  __           _   _ _   _ _  ____
+|  \/  | ___  ___| |_( ) \ | ( )/ ___| ___
+| |\/| |/ _ \/ _ \ __|/|  \| |/| |  _ / _ \\
+| |  | |  __/  __/ |_  | |\  | | |_| | (_) |
+|_|  |_|\___|\___|\__| |_| \_|  \____|\___/
+                                            ''')
+
     mentors = Group(Mentor)
-    mentors.load("../Meet'N'Go 2018 - Questionnaire Parrain_Marraine.csv")
+    mentors.load(input('Path to "Questionnaire Parrain_Marraine": '))
 
     mentees = Group(Mentee)
-    mentees.load("../Meet'N'Go 2018 - Questionnaire Filleul.csv")
+    mentees.load(input('Path to "Questionnaire Filleul": '))
 
-    print('Mentors:')
-    for mentor in mentors:
-        print(mentor)
-    print('Mentees:')
     for mentee in mentees:
-        print(mentee)
+        mentee.find_mentor()
+
+    with open('email.txt', 'w') as email:
+
+        need_alone_message = True
+
+        for mentee in mentees:
+            email.write(mentee.generate_email())
+
+            if mentee.mentror is None:
+                if need_alone_message:
+                    need_alone_message = False
+                    print("These students don't have a mentor:")
+                print(mentee)
+
+    input('\nDone.')
