@@ -49,6 +49,8 @@ class Mentor:
         self.present_the_23 = True if row[16] == 'Oui / Yes' else False
         self.helping_the_23 = True if row[17] == 'Oui / Yes' else False
 
+        self.mentees = []
+
     @property
     def languages(self):
         return ', '.join(self.lang)
@@ -59,12 +61,12 @@ class Mentor:
                     and compat(self.surname) == compat(other.surname)))
 
     def generate_email(self):
-        with open('templates/mail_Filleul.txt') as template:
-            email = template.read()
-        #email = email.format(recipient=self, partner=self.partner)
-        email = email.format(recipient=self)
-        with open('generated_emails/{}.txt'.format(self.email), 'w') as f:
-            f.write(email)
+        emails = ''
+        with open('templates/mail_parrain_marraine.txt') as tmpl:
+                template = tmpl.read()
+        for mentee in self.mentees:
+            emails += template.format(recipient=self, mentee=mentee)
+        return emails
 
     def __str__(self):
         return ' - {name} {surname}, {email}, have studied in {country}, \
@@ -84,6 +86,8 @@ class Mentee:
         self.present_the_23 = True if row[16] == 'Oui / Yes' else False
         self.helping_the_23 = True if row[17] == 'Oui / Yes' else False
 
+        self.mentor = None
+
     @property
     def languages(self):
         return ', '.join(self.lang)
@@ -93,13 +97,28 @@ class Mentee:
                 or (compat(self.name) == compat(other.name)
                     and compat(self.surname) == compat(other.surname)))
 
+    def find_mentor(self, mentors_group):
+        mentors = [m for m in mentors_group
+                   if compat(self.country) == compat(m.country)]
+        if len(mentors) > 0:
+            by_city = [m for m in mentors
+                       if compat(self.city) == compat(m.city)]
+            if len(by_city) > 0:
+                mentors = by_city
+                by_univ = [m for m in mentors
+                           if compat(self.university) == compat(m.university)]
+                if len(by_univ) > 0:
+                    mentors = by_univ
+            self.mentor = mentors.sort(key=lambda x: len(x.mentees))[0]
+
     def generate_email(self):
-        with open('templates/mail_Filleul.txt') as template:
-            email = template.read()
-        #email = email.format(recipient=self, partner=self.partner)
-        email = email.format(recipient=self)
-        with open('generated_emails/{}.txt'.format(self.email), 'w') as f:
-            f.write(email)
+        if self.mentor is None:
+            with open('templates/mail_filleul_sans_parrain.txt') as tmpl:
+                email = tmpl.read().format(recipient=self)
+        else:
+            with open('templates/mail_filleul.txt') as tmpl:
+                email = tmpl.read().format(recipient=self, mentor=self.mentor)
+        return email
 
     def __str__(self):
         return ' - {name} {surname}, {email}, want to go to {country}, \
@@ -116,8 +135,6 @@ if __name__ == '__main__':
     print('Mentors:')
     for mentor in mentors:
         print(mentor)
-        mentor.generate_email()
     print('Mentees:')
     for mentee in mentees:
         print(mentee)
-        mentee.generate_email()

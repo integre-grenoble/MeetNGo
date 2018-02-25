@@ -8,3 +8,11 @@ Tu peux utiliser les champs suivants:
  - {recipient.country}
  - {recipient.city}
  - {recipient.university}
+
+ - {mentee.name}
+ - {mentee.surname}
+ - {mentee.email}
+ - {mentee.languages}
+ - {mentee.country}
+ - {mentee.city}
+ - {mentee.university}

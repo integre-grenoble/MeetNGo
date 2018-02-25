@@ -1,0 +1,18 @@
+Y'a plus qu'a rédiger un template de mail pour les filleuls !
+
+Tu peux utiliser les champs suivants:
+ - {recipient.name}
+ - {recipient.surname}
+ - {recipient.email}
+ - {recipient.languages}
+ - {recipient.country}
+ - {recipient.city}
+ - {recipient.university}
+
+ - {mentor.name}
+ - {mentor.surname}
+ - {mentor.email}
+ - {mentor.languages}
+ - {mentor.country}
+ - {mentor.city}
+ - {mentor.university}

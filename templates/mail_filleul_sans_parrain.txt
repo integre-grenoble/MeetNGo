@@ -1,4 +1,4 @@
-Y'a plus qu'a rédiger un template de mail pour les filleuls !
+Y'a plus qu'a rédiger un template de mail pour les filleuls qui n'ont pas de parrain :'‑(
 
 Tu peux utiliser les champs suivants:
  - {recipient.name}
