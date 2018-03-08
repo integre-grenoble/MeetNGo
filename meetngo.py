@@ -9,8 +9,8 @@ import unicodedata
 def compat(s):
     """Return the string in lowercase and without accents."""
     return ''.join(c for c in unicodedata.normalize('NFKD', s)
-                     if c == ' ' or unicodedata.category(c) != 'Mn')\
-             .casefold().strip()
+                   if unicodedata.category(c) != 'Mn')\
+             .casefold().strip().replace(' ', '')
 
 
 class Group(set):
@@ -27,9 +27,9 @@ class Group(set):
                 ans = input('Are these people the same person ? [Y/n] ')
                 if compat(ans) == compat('n'):
                     print('Answer taken into account. Those are two \
-different person.\n')
+different person.')
                 else:
-                    print('Copy removed!\n')
+                    print('Copy removed!')
                     exist = True
         if not exist:
             self.add(person)
@@ -42,7 +42,9 @@ different person.\n')
                 self.append(self.person_class(row))
 
     def restore(self, dir_path):
-        pass
+        for path in Path(dir_path).glob('*.pickle'):
+            with path.open('rb') as f:
+                self.append(pickle.load(f))
 
 
 class Mentor:
@@ -80,12 +82,11 @@ class Mentor:
     def save(self):
         path = Path('data') / 'mentors'
         if not path.exists():
-            print('created')
             path.mkdir(parents=True)
         path = path / '{}.{}.pickle'.format(compat(self.name),
                                             compat(self.surname))
         with path.open('wb') as f:
-            pickle.dump(self, f)
+            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     def __str__(self):
         return ' - {name} {surname}, {email}, have studied in {country}\
@@ -127,7 +128,8 @@ class Mentee:
                            if compat(self.university) == compat(m.university)]
                 if len(by_univ) > 0:
                     mentors = by_univ
-            self.mentor = mentors.sort(key=lambda x: len(x.mentees))[0]
+            mentors.sort(key=lambda mentor: len(mentor.mentees))
+            self.mentor = mentors[0]
 
     def generate_email(self):
         if self.mentor is None:
@@ -149,11 +151,13 @@ if __name__ == '__main__':
 |  \/  | ___  ___| |_( ) \ | ( )/ ___| ___
 | |\/| |/ _ \/ _ \ __|/|  \| |/| |  _ / _ \
 | |  | |  __/  __/ |_  | |\  | | |_| | (_) |
-|_|  |_|\___|\___|\__| |_| \_|  \____|\___/
-                                            ''')
+|_|  |_|\___|\___|\__| |_| \_|  \____|\___/''')
 
     mentors = Group(Mentor)
-    mentors.load(input('Path to "Questionnaire Parrain-Marraine": '))
+    path = Path('data') / 'mentors'
+    if path.exists():
+        mentors.restore(path)
+    mentors.load(input('\nPath to "Questionnaire Parrain-Marraine": '))
 
     mentees = Group(Mentee)
     mentees.load(input('Path to "Questionnaire Filleul": '))
@@ -168,10 +172,13 @@ if __name__ == '__main__':
         for mentee in mentees:
             email.write(mentee.generate_email())
 
-            if mentee.mentror is None:
+            if mentee.mentor is None:
                 if need_alone_message:
                     need_alone_message = False
-                    print("These students don't have a mentor:")
+                    print("\nThese students don't have a mentor:")
                 print(mentee)
+
+    for mentor in mentors:
+        mentor.save()
 
     input('\nDone.')
