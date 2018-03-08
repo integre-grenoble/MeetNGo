@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import csv
+from pathlib import Path
+import pickle
 import sys
 import unicodedata
 
@@ -7,7 +9,8 @@ import unicodedata
 def compat(s):
     """Return the string in lowercase and without accents."""
     return ''.join(c for c in unicodedata.normalize('NFKD', s)
-                   if unicodedata.category(c) != 'Mn').casefold().strip()
+                     if c == ' ' or unicodedata.category(c) != 'Mn')\
+             .casefold().strip()
 
 
 class Group(set):
@@ -23,7 +26,8 @@ class Group(set):
                 print('\n{}\n{}'.format(other, person))
                 ans = input('Are these people the same person ? [Y/n] ')
                 if compat(ans) == compat('n'):
-                    print('Answer taken into account. Those are to different person.\n')
+                    print('Answer taken into account. Those are two \
+different person.\n')
                 else:
                     print('Copy removed!\n')
                     exist = True
@@ -36,6 +40,9 @@ class Group(set):
             next(reader)  # discard the first line
             for row in reader:
                 self.append(self.person_class(row))
+
+    def restore(self, dir_path):
+        pass
 
 
 class Mentor:
@@ -70,9 +77,19 @@ class Mentor:
             emails += template.format(recipient=self, mentee=mentee)
         return emails
 
+    def save(self):
+        path = Path('data') / 'mentors'
+        if not path.exists():
+            print('created')
+            path.mkdir(parents=True)
+        path = path / '{}.{}.pickle'.format(compat(self.name),
+                                            compat(self.surname))
+        with path.open('wb') as f:
+            pickle.dump(self, f)
+
     def __str__(self):
-        return ' - {name} {surname}, {email}, have studied in {country}, \
-speak {lang}.'.format_map(self.__dict__)
+        return ' - {name} {surname}, {email}, have studied in {country}\
+, speak {lang}.'.format_map(self.__dict__)
 
 
 class Mentee:
@@ -86,7 +103,6 @@ class Mentee:
         self.city = row[9].strip()
         self.university = row[10].strip()
         self.present_the_23 = True if row[16] == 'Oui / Yes' else False
-        self.helping_the_23 = True if row[17] == 'Oui / Yes' else False
 
         self.mentor = None
 
@@ -129,21 +145,21 @@ speak {lang}.'.format_map(self.__dict__)
 
 if __name__ == '__main__':
 
-    print(''' __  __           _   _ _   _ _  ____
+    print(r''' __  __           _   _ _   _ _  ____
 |  \/  | ___  ___| |_( ) \ | ( )/ ___| ___
-| |\/| |/ _ \/ _ \ __|/|  \| |/| |  _ / _ \\
+| |\/| |/ _ \/ _ \ __|/|  \| |/| |  _ / _ \
 | |  | |  __/  __/ |_  | |\  | | |_| | (_) |
 |_|  |_|\___|\___|\__| |_| \_|  \____|\___/
                                             ''')
 
     mentors = Group(Mentor)
-    mentors.load(input('Path to "Questionnaire Parrain_Marraine": '))
+    mentors.load(input('Path to "Questionnaire Parrain-Marraine": '))
 
     mentees = Group(Mentee)
     mentees.load(input('Path to "Questionnaire Filleul": '))
 
     for mentee in mentees:
-        mentee.find_mentor()
+        mentee.find_mentor(mentors)
 
     with open('email.txt', 'w') as email:
 
