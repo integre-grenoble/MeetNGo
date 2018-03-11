@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
+import configparser
 import csv
 import os
+import pathlib
 import pickle
 import shutil
 import unicodedata
-from pathlib import Path
+
+
+# sorry for the global variable... at least it make sense for a config
+config = configparser.ConfigParser()
+config.read('config.ini')
 
 
 def compat(s):
@@ -16,7 +22,7 @@ def compat(s):
 
 def find_file(name, folder='.'):
     """Find a file that contain `name` in its filename."""
-    files = list(Path(folder).glob('*{}*'.format(name)))
+    files = list(pathlib.Path(folder).glob('*{}*'.format(name)))
 
     if len(files) == 1:
         return files[0]
@@ -41,6 +47,7 @@ class Group(set):
         super().__init__(*args)
 
     def append(self, person):
+        """Add a person to the group, ask user if already into."""
         exist = False
         for other in self:
             if not exist and person.look_like(other):
@@ -64,8 +71,8 @@ person.')
                 self.append(self.person_class(row))
 
     def restore(self, dir_path):
-        """Load pickeled object into the group."""
-        for path in Path(dir_path).glob('*.pickle'):
+        """Unpickle objects into the group."""
+        for path in pathlib.Path(dir_path).glob('*.pickle'):
             with path.open('rb') as f:
                 self.append(pickle.load(f))
 
@@ -99,7 +106,9 @@ class Mentor:
     def generate_email(self):
         """Generate emails form a predefined template."""
         emails = ''
-        with open('templates/mail_parrain_marraine.txt') as tmpl:
+        template_path = config['Templates']['folder'] + '/'
+        template_path += config['Templates']['mentors']
+        with open(template_path) as tmpl:
                 template = tmpl.read()
         for mentee in self.mentees:
             emails += template.format(recipient=self, mentee=mentee)
@@ -107,7 +116,8 @@ class Mentor:
 
     def save(self):
         """Pickle mentor information for later use."""
-        path = Path('data') / 'mentors'
+        path = pathlib.Path(config['Data']['top folder'])
+        path = path / config['Data']['mentors folder']
         if not path.exists():
             path.mkdir(parents=True)
         path = path / '{}.{}.pickle'.format(compat(self.name),
@@ -169,17 +179,21 @@ class Mentee:
 
     def generate_email(self):
         """Generate email form predefined templates."""
+        template_path = config['Templates']['folder'] + '/'
         if self.mentor is None:
-            with open('templates/mail_filleul_sans_parrain.txt') as tmpl:
+            template_path += config['Templates']['alone mentees']
+            with open(template_path) as tmpl:
                 email = tmpl.read().format(recipient=self)
         else:
-            with open('templates/mail_filleul.txt') as tmpl:
+            template_path += config['Templates']['mentees']
+            with open(template_path) as tmpl:
                 email = tmpl.read().format(recipient=self, mentor=self.mentor)
         return email
 
     def save(self):
         """Pickle mentee information for later use."""
-        path = Path('data') / 'mentees'
+        path = pathlib.Path(config['Data']['top folder'])
+        path = path / config['Data']['mentees folder']
         if not path.exists():
             path.mkdir(parents=True)
         path = path / '{}.{}.pickle'.format(compat(self.name),
@@ -205,27 +219,31 @@ if __name__ == '__main__':
 
     # create a mentor group and fill it with old data (if the user agree)
     mentors = Group(Mentor)
-    path = Path('data') / 'mentors'
+    path = pathlib.Path(config['Data']['top folder'])
+    path = path / config['Data']['mentors folder']
     if path.exists():
         ans = input('Previous mentors data are available, do you want to \
 use them? [y/N] ')
         if compat(ans) == compat('y'):
             mentors.restore(path)
     # add new mentors from csv
-    mentors_file = find_file('Questionnaire Parrain-Marraine')
+    mentors_file = find_file(config['CSV files']['mentors file'],
+                             config['CSV files']['folder'])
     print('"{}" will be used for new mentors data.'.format(mentors_file))
     mentors.load(mentors_file)
 
-    # create a mentor group and fill it with old data (if the user agree)
+    # create a mentee group and fill it with old data (if the user agree)
     mentees = Group(Mentee)
-    path = Path('data') / 'mentees'
+    path = pathlib.Path(config['Data']['top folder'])
+    path = path / config['Data']['mentees folder']
     if path.exists():
         ans = input('\nPrevious mentees data are available, do you want to \
 use them? [y/N] ')
         if compat(ans) == compat('y'):
             mentors.restore(path)
-    # add new mentors from csv
-    mentees_file = find_file('Questionnaire Filleul')
+    # add new mentees from csv
+    mentees_file = find_file(config['CSV files']['mentees file'],
+                             config['CSV files']['folder'])
     print('"{}" will be used for new mentees data.'.format(mentees_file))
     mentees.load(mentees_file)
 
@@ -234,7 +252,7 @@ use them? [y/N] ')
         mentee.find_mentor(mentors)
 
     # generate all the emails, and write them in a file
-    with open('email.txt', 'w') as email:
+    with open(config['Emails']['generated emails file'], 'w') as email:
         need_alone_message = True
 
         for mentee in mentees:  # generate mentees emails
@@ -256,7 +274,8 @@ use them? [y/N] ')
         ans = input('\nDo you want to save them for next time? [Y/n] ')
         if compat(ans) != compat('n'):
             # if old data are present, remove them first
-            path = Path('data') / 'mentees'
+            path = pathlib.Path(config['Data']['top folder'])
+            path = path / config['Data']['mentees folder']
             if path.exists():
                 shutil.rmtree(path)
             # save only mentees that doesn't have a mentor
