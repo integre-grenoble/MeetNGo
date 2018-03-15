@@ -67,13 +67,12 @@ person.')
 
     def load(self, filename, ignore_before=datetime.min):
         """Load a csv file into the group."""
-        date_format = '%Y/%m/%d %I:%M:%S %p %Z'
         with open(filename) as f:
             reader = csv.reader(f)
             for _ in range(config['CSV files'].getint('unread row', 1)):
                 next(reader)  # discard first lines
             for row in reader:
-                if datetime.strptime(row[0], date_format) > ignore_before:
+                if datetime.strptime(row[0][:10], '%Y/%m/%d') > ignore_before:
                     self.append(self.person_class(row))
 
     def restore(self, dir_path):
