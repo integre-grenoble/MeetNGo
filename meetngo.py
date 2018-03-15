@@ -6,10 +6,13 @@ import pathlib
 import pickle
 import shutil
 import unicodedata
+from datetime import datetime
 
 
 # sorry for the global variable... at least it make sense for a config
-config = configparser.ConfigParser()
+config = configparser.ConfigParser(
+    converters={'datetime': lambda s: datetime.strptime(s, '%Y-%m-%d')}
+)
 config.read('config.ini')
 
 
@@ -62,14 +65,16 @@ person.')
         if not exist:
             self.add(person)
 
-    def load(self, filename):
+    def load(self, filename, ignore_before=datetime.min):
         """Load a csv file into the group."""
+        date_format = '%Y/%m/%d %I:%M:%S %p %Z'
         with open(filename) as f:
             reader = csv.reader(f)
-            for _ in range(config['CSV files'].getint('unread row')):
+            for _ in range(config['CSV files'].getint('unread row', 1)):
                 next(reader)  # discard first lines
             for row in reader:
-                self.append(self.person_class(row))
+                if datetime.strptime(row[0], date_format) > ignore_before:
+                    self.append(self.person_class(row))
 
     def restore(self, dir_path):
         """Unpickle objects into the group."""
@@ -218,6 +223,15 @@ if __name__ == '__main__':
 | |  | |  __/  __/ |_  | |\\  | | |_| | (_) |
 |_|  |_|\\___|\\___|\\__| |_| \\_|  \\____|\\___/\x1B[m\n''')
 
+    # if 'last run' is in the config, the user might want to ignore
+    # results prior to that date
+    last_run = config['CSV files'].getdatetime('last run', datetime.min)
+    if last_run > datetime.min:
+        ans = input('Do you want to ignore csv data from before {}? [Y/n] '\
+                    .format(last_run.date()))
+        if compat(ans) == compat('n'):
+            last_run == datetime.min.date()
+
     # create a mentor group and fill it with old data (if the user agree)
     mentors = Group(Mentor)
     path = pathlib.Path(config['Data']['top folder'])
@@ -231,7 +245,7 @@ use them? [Y/n] ')
     mentors_file = find_file(config['CSV files']['mentors file'],
                              config['CSV files']['folder'])
     print('"{}" will be used for new mentors data.'.format(mentors_file))
-    mentors.load(mentors_file)
+    mentors.load(mentors_file, last_run)
 
     # create a mentee group and fill it with old data (if the user agree)
     mentees = Group(Mentee)
@@ -246,7 +260,7 @@ use them? [Y/n] ')
     mentees_file = find_file(config['CSV files']['mentees file'],
                              config['CSV files']['folder'])
     print('"{}" will be used for new mentees data.'.format(mentees_file))
-    mentees.load(mentees_file)
+    mentees.load(mentees_file, last_run)
 
     # try to find a mentor for each mentee
     for mentee in mentees:
@@ -289,5 +303,10 @@ use them? [Y/n] ')
     if compat(ans) != compat('n'):
         for mentor in mentors:
             mentor.save()
+
+    # save today's date for the next time
+    with open('config.ini', 'w') as f:
+        config['CSV files']['last run'] = datetime.today().date().isoformat()
+        config.write(f)
 
     print()  # final new line, IMHO it look better with it
