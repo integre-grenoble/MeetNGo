@@ -228,7 +228,7 @@ if __name__ == '__main__':
     last_run = config['CSV files'].getdatetime('last run', datetime.min)
     if last_run > datetime.min:
         ans = input('Do you want to ignore csv data from before {}? [Y/n] '\
-                    .format(last_run.date()))
+                   .format(last_run.date()))
         if compat(ans) == compat('n'):
             last_run == datetime.min.date()
 
@@ -255,7 +255,7 @@ use them? [Y/n] ')
         ans = input('\nPrevious mentees data are available, do you want to \
 use them? [Y/n] ')
         if compat(ans) != compat('n'):
-            mentors.restore(path)
+            mentees.restore(path)
     # add new mentees from csv
     mentees_file = find_file(config['CSV files']['mentees file'],
                              config['CSV files']['folder'])
