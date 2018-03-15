@@ -66,7 +66,8 @@ person.')
         """Load a csv file into the group."""
         with open(filename) as f:
             reader = csv.reader(f)
-            next(reader)  # discard the first line
+            for _ in range(config['CSV files'].getint('unread row')):
+                next(reader)  # discard first lines
             for row in reader:
                 self.append(self.person_class(row))
 
@@ -223,8 +224,8 @@ if __name__ == '__main__':
     path = path / config['Data']['mentors folder']
     if path.exists():
         ans = input('Previous mentors data are available, do you want to \
-use them? [y/N] ')
-        if compat(ans) == compat('y'):
+use them? [Y/n] ')
+        if compat(ans) != compat('n'):
             mentors.restore(path)
     # add new mentors from csv
     mentors_file = find_file(config['CSV files']['mentors file'],
@@ -238,8 +239,8 @@ use them? [y/N] ')
     path = path / config['Data']['mentees folder']
     if path.exists():
         ans = input('\nPrevious mentees data are available, do you want to \
-use them? [y/N] ')
-        if compat(ans) == compat('y'):
+use them? [Y/n] ')
+        if compat(ans) != compat('n'):
             mentors.restore(path)
     # add new mentees from csv
     mentees_file = find_file(config['CSV files']['mentees file'],
