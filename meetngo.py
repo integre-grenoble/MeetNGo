@@ -20,7 +20,7 @@ def compat(s):
     """Return the string in lowercase and without accents."""
     return ''.join(c for c in unicodedata.normalize('NFKD', s)
                    if unicodedata.category(c) != 'Mn')\
-             .casefold().strip().replace(' ', '')
+             .casefold().strip().replace(' ', '').replace('-', '')
 
 
 def find_file(name, folder='.'):
@@ -56,7 +56,7 @@ class Group(set):
             if not exist and person.look_like(other):
                 print('\n{}\n{}'.format(other, person))
                 ans = input('Are these people the same person ? [Y/n] ')
-                if compat(ans) == compat('n'):
+                if compat(ans)[:1] == compat('n')[:1]:
                     print('Answer taken into account. Those are two different \
 person.')
                 else:
@@ -228,7 +228,7 @@ if __name__ == '__main__':
     if last_run > datetime.min:
         ans = input('Do you want to ignore csv data from before {}? [Y/n] '\
                    .format(last_run.date()))
-        if compat(ans) == compat('n'):
+        if compat(ans)[:1] == compat('n')[:1]:
             last_run == datetime.min.date()
 
     # create a mentor group and fill it with old data (if the user agree)
@@ -238,7 +238,7 @@ if __name__ == '__main__':
     if path.exists():
         ans = input('Previous mentors data are available, do you want to \
 use them? [Y/n] ')
-        if compat(ans) != compat('n'):
+        if compat(ans)[:1] != compat('n')[:1]:
             mentors.restore(path)
     # add new mentors from csv
     mentors_file = find_file(config['CSV files']['mentors file'],
@@ -253,7 +253,7 @@ use them? [Y/n] ')
     if path.exists():
         ans = input('\nPrevious mentees data are available, do you want to \
 use them? [Y/n] ')
-        if compat(ans) != compat('n'):
+        if compat(ans)[:1] != compat('n')[:1]:
             mentees.restore(path)
     # add new mentees from csv
     mentees_file = find_file(config['CSV files']['mentees file'],
@@ -286,7 +286,7 @@ use them? [Y/n] ')
     if not need_alone_message:
         # ask the user to save them
         ans = input('\nDo you want to save them for next time? [Y/n] ')
-        if compat(ans) != compat('n'):
+        if compat(ans)[:1] != compat('n')[:1]:
             # if old data are present, remove them first
             path = pathlib.Path(config['Data']['top folder'])
             path = path / config['Data']['mentees folder']
@@ -299,7 +299,7 @@ use them? [Y/n] ')
 
     # also ask the user to save mentors
     ans = input('\nDo you want to save mentors data for next time? [Y/n] ')
-    if compat(ans) != compat('n'):
+    if compat(ans)[:1] != compat('n')[:1]:
         for mentor in mentors:
             mentor.save()
 
